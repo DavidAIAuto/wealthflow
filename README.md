@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Finance Tracker
 
-## Getting Started
+Local-first, single-user personal finance & stock portfolio tracker.
 
-First, run the development server:
+- **Transactions** — income/expense ledger with categories, filters and monthly budgets
+- **Subscriptions & bills** — recurring costs normalized to a monthly burn, one-click "Log Payment"
+- **Portfolio** — tickers + (fractional) shares, daily closes from Yahoo Finance cached for 12h
+- **Settings** — base currency + USD FX rate, category/budget manager, CSV export
+
+Stack: Next.js 16 (App Router) · Tailwind v4 · shadcn/ui (Base UI) · Prisma 7 + SQLite (better-sqlite3 adapter) · yahoo-finance2 v4 · recharts · zod · date-fns · vitest.
+
+## Setup
+
+Requires Node.js ≥ 22.
 
 ```bash
+npm install                 # also runs `prisma generate`
+npx prisma migrate dev      # creates prisma/dev.db
+npx prisma db seed          # default categories + settings (idempotent)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`DATABASE_URL` defaults to `file:./prisma/dev.db` (override in `.env`). The database file is git-ignored.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm test` | Unit tests (finance math, date advancement, price cache & Yahoo fallback) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run build` | Production build |
+| `npm run db:seed` | Re-run the seed |
 
-## Learn More
+## Notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Calendar dates (transaction dates, due dates) are stored as UTC noon of the chosen day so they never shift across timezones.
+- If Yahoo Finance is unreachable or rate-limits, portfolio endpoints still return `200` with the last cached prices plus `stale: true` and a warning.
+- Income/expenses/budgets are in the base currency. Stock values stay in their native currency (usually USD); the portfolio total also shows a converted figure when the base currency isn't USD and the FX rate isn't 1.

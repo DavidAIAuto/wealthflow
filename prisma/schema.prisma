@@ -1,0 +1,73 @@
+// Prisma v7: SQLite via @prisma/adapter-better-sqlite3 (see src/lib/db.ts).
+// Connection URL lives in prisma.config.ts (DATABASE_URL, default file:./prisma/dev.db).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Category {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique
+  type          String // "INCOME" | "EXPENSE"
+  expenseGroup  String? // "FIXED" | "VARIABLE" (null for INCOME)
+  color         String          @default("#64748b")
+  monthlyBudget Float? // Optional monthly cap in base currency
+  isDefault     Boolean         @default(false)
+  transactions  Transaction[]
+  recurring     RecurringItem[]
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  type        String // "INCOME" | "EXPENSE"
+  amount      Float // Always > 0
+  description String?
+  date        DateTime
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryId])
+}
+
+model RecurringItem {
+  id          Int      @id @default(autoincrement())
+  name        String
+  amount      Float // Always > 0
+  cycle       String // "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY"
+  nextDueDate DateTime
+  isActive    Boolean  @default(true)
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+}
+
+model StockHolding {
+  id           Int      @id @default(autoincrement())
+  ticker       String   @unique // Always stored uppercase
+  companyName  String?
+  shares       Float // > 0, up to 6 decimal places
+  avgCostBasis Float? // Optional avg purchase price per share in stock currency
+  updatedAt    DateTime @updatedAt
+}
+
+model StockPriceCache {
+  ticker        String   @id
+  closingPrice  Float
+  previousClose Float?
+  currency      String   @default("USD")
+  fetchedAt     DateTime @default(now())
+}
+
+model AppSettings {
+  id           Int    @id @default(1)
+  baseCurrency String @default("USD")
+  usdToBaseFx  Float  @default(1.0)
+}

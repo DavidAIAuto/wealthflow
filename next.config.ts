@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Local-first, always-live data: every page/API reads the SQLite DB at request time,
+  // so Cache Components prerendering is disabled.
+  cacheComponents: false,
+  serverExternalPackages: ["better-sqlite3", "yahoo-finance2"],
   turbopack: {
     rules: {
       "*.css": {
